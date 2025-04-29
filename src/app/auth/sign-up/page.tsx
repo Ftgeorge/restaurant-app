@@ -1,9 +1,9 @@
 "use client";
 
-import { Button } from "@/app/components/button";
-import AuthFooter from "@/app/components/footer/auth.footer";
-import AuthInput from "@/app/components/input/auth.input";
-import AuthLayout from "@/app/components/layout/auth.layout";
+import { Button } from "@/components/button";
+import AuthFooter from "@/components/footer/auth.footer";
+import AuthInput from "@/components/input/auth.input";
+import AuthLayout from "@/components/layout/auth.layout";
 import { useRouter } from "next/navigation";
 
 export default function SignInScreen() {
