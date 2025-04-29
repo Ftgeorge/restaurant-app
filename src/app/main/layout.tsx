@@ -1,6 +1,7 @@
 "use client";
 
-import { ReactNode, useState } from "react";
+import { ReactNode } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { IoMdNotificationsOutline } from "react-icons/io";
 import {
     MdAssignment,
@@ -10,38 +11,42 @@ import {
     MdChatBubbleOutline,
     MdPersonOutline,
 } from "react-icons/md";
+import { FaHamburger } from "react-icons/fa";
+import { GiHamburgerMenu } from "react-icons/gi";
 
 interface SidebarProviderProps {
     children: ReactNode;
-    isOpen: boolean;
-    onToggleSidebar: () => void;
 }
 
 const navItems = [
-    { label: "Audit", icon: <MdAssignment size={20} /> },
-    { label: "Report", icon: <MdReport size={20} /> },
-    { label: "Evidence", icon: <MdFolder size={20} /> },
-    { label: "Incidence", icon: <MdWarning size={20} /> },
+    { label: "Incident", icon: <MdWarning size={20} />, path: "/main/incident" },
+    { label: "Evidence", icon: <MdFolder size={20} />, path: "/main/evidence" },
+    { label: "Audit", icon: <MdAssignment size={20} />, path: "/main/audit" },
+    { label: "Report", icon: <MdReport size={20} />, path: "/main/report" },
 ];
 
 export default function SidebarProvider({
     children,
-    isOpen,
-    onToggleSidebar,
 }: SidebarProviderProps) {
-    const [currentPage, setCurrentPage] = useState("Audit");
+    const router = useRouter();
+    const pathname = usePathname();
 
     return (
         <div className="flex w-full h-screen bg-gray-100">
             {/* Sidebar */}
-            <div className="w-72 h-full bg-white shadow-lg p-4">
-                <h2 className="text-xl font-semibold mb-6">Dashboard</h2>
+            <div className="w-72 h-full bg-white p-4">
+                <div className="flex w-full items-center justify-between mb-6 text-xl">
+                    <h2 className="font-semibold">Dashboard</h2>
+                    <GiHamburgerMenu className="text-blue-500" />
+                </div>
                 <nav className="space-y-4">
                     {navItems.map((item) => (
                         <button
                             key={item.label}
-                            onClick={() => setCurrentPage(item.label)}
-                            className={`flex items-center w-full p-3 rounded-md text-left hover:bg-blue-600 transition ${currentPage === item.label ? "bg-blue-500 text-white font-medium" : ""
+                            onClick={() => router.push(item.path)}
+                            className={`text-gray-600 flex items-center w-full p-3 rounded-md text-left hover:text-blue-600 transition ${pathname === item.path
+                                ? "bg-blue-500 hover:text-white text-white font-medium"
+                                : ""
                                 }`}
                         >
                             <span className="mr-3">{item.icon}</span>
@@ -57,7 +62,11 @@ export default function SidebarProvider({
                 <div className="h-14 w-full bg-white flex items-center justify-between px-6 shadow-sm">
                     <div className="flex items-center gap-2">
                         <div className="bg-blue-500 h-8 w-3 rounded" />
-                        <h1 className="text-lg font-semibold">{currentPage}</h1>
+                        <h1 className="text-lg font-semibold capitalize">
+                            {
+                                navItems.find((item) => item.path === pathname)?.label || ""
+                            }
+                        </h1>
                     </div>
                     <div className="flex items-center gap-8">
                         <MdChatBubbleOutline size={22} className="cursor-pointer" />
