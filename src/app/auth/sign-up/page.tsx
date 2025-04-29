@@ -1,7 +1,52 @@
+"use client";
+
+import { Button } from "@/app/components/button";
+import AuthFooter from "@/app/components/footer/auth.footer";
+import AuthInput from "@/app/components/input/auth.input";
+import AuthLayout from "@/app/components/layout/auth.layout";
+import { useRouter } from "next/navigation";
+
 export default function SignInScreen() {
+    const router = useRouter()
+    const SignUp = () => {
+        router.push('/auth/verify')
+    }
+
     return (
         <>
-        <h1>Sign-Up Screen</h1>
+            <AuthLayout header="Sign Up">
+                <AuthInput
+                    inputLable="Username"
+                    placeholder="Jogn Doe"
+                    className=""
+                />
+                <AuthInput
+                    inputLable="Email"
+                    placeholder="username@gmail.com"
+                    className=""
+                />
+                <AuthInput
+                    inputLable="Telephone"
+                    placeholder="0000-0000-0000"
+                    className=""
+                />
+                <AuthInput
+                    inputLable="Password"
+                    placeholder="********"
+                    className=""
+                />
+                <AuthInput
+                    inputLable="Re-Enter Password"
+                    placeholder="********"
+                    className=""
+                />
+                <Button onClick={SignUp}>Sign Up</Button>
+                <AuthFooter
+                    footerMessage="Already have an account?"
+                    gotoLink="Log In"
+                    href="/auth/login"
+                />
+            </AuthLayout>
         </>
     );
 }
