@@ -11,7 +11,6 @@ import FilterModal from "@/components/FilterModal";
 import AddIncident from "@/components/AddIncident";
 import { useAuthStore } from "@/store/authStore";
 import { getAudits } from "@/lib/api";
-import AddAudit from "@/components/AddAudit";
 
 interface Product {
     _id: string;
@@ -144,7 +143,7 @@ export default function Audit() {
     return (
         <div className="w-full h-full flex flex-col p-4">
             {showAddForm ? (
-                <AddAudit onClose={() => setShowAddForm(false)} />
+                <AddIncident onClose={() => setShowAddForm(false)} />
             ) : (
                 <>
                     <div className="flex flex-row w-full items-center justify-between mb-4">
@@ -177,7 +176,7 @@ export default function Audit() {
                             </button>
 
                             {/* Add Button */}
-                            <Button className="px-4" onClick={() => setShowAddForm(true)}>Add Audit</Button>
+                            <Button className="px-4" onClick={() => setShowAddForm(true)}>Add Product</Button>
 
                             {/* Export Button */}
                             <button className="flex items-center gap-2 px-4 h-12 border border-gray-300 rounded-md hover:bg-gray-100">
@@ -241,8 +240,8 @@ export default function Audit() {
                                                     <ActionDropdown
                                                         position={dropdownPosition}
                                                         onClose={() => setDropdownRow(null)}
-                                                        onEdit={() => }
-                                                        onDelete={() => }
+                                                        onEdit={()=> }
+                                                        onDelete={()=>}
                                                     />
                                                 )}
                                             </td>
