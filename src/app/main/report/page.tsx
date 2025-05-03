@@ -1,98 +1,140 @@
 "use client";
 
-import ActionDropdown from "@/components/ActionDropdown";
-import AddIncident from "@/components/AddIncident";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/button";
-import FilterModal from "@/components/FilterModal";
-import { useState } from "react";
-import { BiFilterAlt } from "react-icons/bi";
 import { FiSearch } from "react-icons/fi";
-import { MdKeyboardArrowDown, MdMoreVert, MdChevronLeft, MdChevronRight } from "react-icons/md";
 import { RiFileDownloadLine } from "react-icons/ri";
+import { MdKeyboardArrowDown, MdMoreVert, MdChevronLeft, MdChevronRight } from "react-icons/md";
+import { BiFilterAlt } from "react-icons/bi";
+import ActionDropdown from "@/components/ActionDropdown";
+import FilterModal from "@/components/FilterModal";
+import { useAuthStore } from "@/store/authStore";
+import { getAudits, deleteAudit as deleteAuditAPI, updateAudit as updateAuditAPI } from "@/lib/api";
+import AddAudit from "@/components/AddAudit";
+import DeleteConfirmModal from "@/components/modal/DeleteModal";
 
-const data = [
-    {
-        id: 1,
-        name: "Mama's Kitchen",
-        representative: "Ada Obi",
-        location: "Lagos, Nigeria",
-        phone: "+2348012345678",
-        ratings: 4.5,
-        status: "open",
-    },
-    {
-        id: 2,
-        name: "Chop Life",
-        representative: "John Doe",
-        location: "Abuja, Nigeria",
-        phone: "+2348098765432",
-        ratings: 4.2,
-        status: "closed",
-    },
-    {
-        id: 3,
-        name: "Jollof Central",
-        representative: "Ngozi Chukwu",
-        location: "Enugu, Nigeria",
-        phone: "+2348034567890",
-        ratings: 4.8,
-        status: "open",
-    },
-    {
-        id: 4,
-        name: "Suya Palace",
-        representative: "Ibrahim Musa",
-        location: "Kano, Nigeria",
-        phone: "+2348023456789",
-        ratings: 4.3,
-        status: "open",
-    },
-    {
-        id: 5,
-        name: "Pounded Yam Spot",
-        representative: "Emeka Umeh",
-        location: "Port Harcourt, Nigeria",
-        phone: "+2348067890123",
-        ratings: 4.1,
-        status: "closed",
-    },
-    {
-        id: 6,
-        name: "Ewa Agoyin Place",
-        representative: "Bisi Alabi",
-        location: "Ibadan, Nigeria",
-        phone: "+2348076543210",
-        ratings: 4.4,
-        status: "open",
-    },
-];
+interface Product {
+    _id: string;
+    name: string;
+    description: string;
+    category: string;
+    price: number;
+    unit: string;
+    createdAt: string;
+}
 
-export default function Report() {
-    const [dropdownRow, setDropdownRow] = useState<number | null>(null);
-    const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
+interface User {
+    _id: string;
+    firstname: string;
+    lastname: string;
+    email: string;
+    userType: string;
+}
 
-    const [showFilterModal, setShowFilterModal] = useState(false);
-    const [filterPosition, setFilterPosition] = useState({ top: 0, left: 0 });
+interface Audit {
+    _id: string;
+    _user: User;
+    _product: Product;
+    quantity: string;
+    location: string;
+    createdAt: string;
+    lastUpdated: string;
+}
 
-    const [currentPage, setCurrentPage] = useState(1);
+export default function Audit() {
+    const [audits, setAudits] = useState<Audit[]>([]);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
+    const [editAudit, setEditAudit] = useState<Audit | null>(null);
+    const [deleteAudit, setDeleteAudit] = useState<Audit | null>(null);
+    const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
+    const [dropdownRow, setDropdownRow] = useState<string | null>(null);
+    const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
+    const [showFilterModal, setShowFilterModal] = useState<boolean>(false);
+    const [filterPosition, setFilterPosition] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
+    const [currentPage, setCurrentPage] = useState<number>(1);
+    const [showAddForm, setShowAddForm] = useState<boolean>(false);
+    const [searchTerm, setSearchTerm] = useState<string>("");
+
+    // Get user token from auth store
+    const { user } = useAuthStore();
+
+    // Pagination settings
     const rowsPerPage = 3;
-    const totalPages = Math.ceil(data.length / rowsPerPage);
 
-    const [showAddForm, setShowAddForm] = useState(false);
+    // Fetch audits on component mount
+    useEffect(() => {
+        fetchAudits();
+    }, [user]);
 
+    const fetchAudits = async () => {
+        if (!user || !user.token) {
+            setError("User not authenticated");
+            setLoading(false);
+            return;
+        }
 
-    const handleDropdownClick = (event: React.MouseEvent, rowId: number) => {
-        const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-        setDropdownPosition({ top: rect.bottom + window.scrollY, left: rect.left });
-        setDropdownRow(dropdownRow === rowId ? null : rowId);
+        try {
+            const auditData = await getAudits(user.token);
+            setAudits(auditData);
+            setLoading(false);
+        } catch (error) {
+            console.error("Failed to fetch audits:", error);
+            const errorMessage = error instanceof Error ? error.message : "Failed to fetch audits";
+            setError(errorMessage);
+            setLoading(false);
+        }
     };
 
-    const handleFilterClick = (event: React.MouseEvent) => {
-        const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    // Handle UI interactions
+    const handleDropdownClick = (event: React.MouseEvent<HTMLButtonElement>, auditId: string) => {
+        const rect = event.currentTarget.getBoundingClientRect();
+        setDropdownPosition({ top: rect.bottom + window.scrollY, left: rect.left });
+        setDropdownRow(dropdownRow === auditId ? null : auditId);
+    };
+
+    const handleFilterClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+        const rect = event.currentTarget.getBoundingClientRect();
         setFilterPosition({ top: rect.bottom + window.scrollY, left: rect.left });
         setShowFilterModal(!showFilterModal);
     };
 
+    // Delete audit handler
+    const handleDeleteClick = (audit: Audit) => {
+        setDeleteAudit(audit);
+        setShowDeleteModal(true);
+        setDropdownRow(null); // Close dropdown
+    };
+
+    // Edit audit handler
+    const handleEditClick = (audit: Audit) => {
+        setEditAudit(audit);
+        setDropdownRow(null); // Close dropdown
+    };
+
+    // Confirm delete action
+    const confirmDelete = async () => {
+        if (!deleteAudit || !user?.token) return;
+
+        try {
+            setLoading(true);
+            // Use the deleteAuditAPI function
+            await deleteAuditAPI(deleteAudit._id, {}, user.token);
+
+            // Remove audit from state
+            setAudits(audits.filter(audit => audit._id !== deleteAudit._id));
+            setShowDeleteModal(false);
+            setDeleteAudit(null);
+        } catch (error) {
+            console.error("Failed to delete audit:", error);
+            const errorMessage = error instanceof Error ? error.message : "Failed to delete audit";
+            setError(errorMessage);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Pagination handlers
     const handlePrevious = () => {
         if (currentPage > 1) setCurrentPage(currentPage - 1);
     };
@@ -101,21 +143,55 @@ export default function Report() {
         if (currentPage < totalPages) setCurrentPage(currentPage + 1);
     };
 
-    const paginatedData = data.slice(
+    // Filter audits based on search term
+    const filteredAudits = audits.filter(audit =>
+        audit._product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        audit._product.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        audit.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        `${audit._user.firstname} ${audit._user.lastname}`.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    // Calculate total pages
+    const totalPages = Math.ceil(filteredAudits.length / rowsPerPage);
+
+    // Get paginated data
+    const paginatedAudits = filteredAudits.slice(
         (currentPage - 1) * rowsPerPage,
         currentPage * rowsPerPage
     );
+
+    // Format date helper
+    const formatDate = (dateString: string) => {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+    };
+
+    // Format price helper
+    const formatPrice = (price: number) => {
+        return new Intl.NumberFormat('en-NG', {
+            style: 'currency',
+            currency: 'NGN',
+            minimumFractionDigits: 2
+        }).format(price);
+    };
+
     return (
         <div className="w-full h-full flex flex-col p-4">
             {showAddForm ? (
-                <AddIncident onClose={() => setShowAddForm(false)} />
+                <AddAudit onClose={() => setShowAddForm(false)} />
+            ) : editAudit ? (
+                <AuditEditForm audit={editAudit} onClose={() => setEditAudit(null)} />
             ) : (
                 <>
                     <div className="flex flex-row w-full items-center justify-between mb-4">
                         {/* Page title */}
                         <div className="flex gap-2 items-center">
                             <div className="bg-blue-500 h-8 w-3 rounded" />
-                            <h1 className="font-semibold text-xl text-black">Report</h1>
+                            <h1 className="font-semibold text-xl text-black">Audit</h1>
                         </div>
 
                         {/* Actions */}
@@ -125,6 +201,8 @@ export default function Report() {
                                 <FiSearch className="absolute top-1/2 left-3 transform -translate-y-1/2 text-gray-500" />
                                 <input
                                     placeholder="Search"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
                                     className="pl-10 pr-4 h-12 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 />
                             </div>
@@ -139,7 +217,7 @@ export default function Report() {
                             </button>
 
                             {/* Add Button */}
-                            <Button className="px-4" onClick={() => setShowAddForm(true)}>Add Incident</Button>
+                            <Button className="px-4" onClick={() => setShowAddForm(true)}>Add Audit</Button>
 
                             {/* Export Button */}
                             <button className="flex items-center gap-2 px-4 h-12 border border-gray-300 rounded-md hover:bg-gray-100">
@@ -150,58 +228,70 @@ export default function Report() {
                         </div>
                     </div>
 
-                    {/* Table */}
-                    <div className="overflow-x-auto bg-white rounded-md">
-                        <table className="min-w-full">
-                            <thead>
-                                <tr>
-                                    <th className="p-4 text-left">
-                                        <input type="checkbox" />
-                                    </th>
-                                    <th className="p-4 text-left flex items-center gap-1">
-                                        Name
-                                        <MdKeyboardArrowDown size={16} />
-                                    </th>
-                                    <th className="p-4 text-left">Representative</th>
-                                    <th className="p-4 text-left">Location</th>
-                                    <th className="p-4 text-left">Phone Number</th>
-                                    <th className="p-4 text-left">Ratings</th>
-                                    <th className="p-4 text-left">Status</th>
-                                    <th className="p-4 text-left">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {paginatedData.map((row) => (
-                                    <tr key={row.id} className="border-t border-t-gray-200 hover:bg-gray-50">
-                                        <td className="px-4 py-8">
+                    {/* Loading, Error, or Table */}
+                    {loading ? (
+                        <div className="flex justify-center items-center h-64">
+                            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                        </div>
+                    ) : error ? (
+                        <div className="flex justify-center items-center h-64 text-red-500">
+                            Error: {error}. Please try again.
+                        </div>
+                    ) : audits.length === 0 ? (
+                        <div className="flex justify-center items-center h-64 text-gray-500">
+                            No audit records found.
+                        </div>
+                    ) : (
+                        <div className="overflow-x-auto bg-white rounded-md">
+                            <table className="min-w-full">
+                                <thead>
+                                    <tr>
+                                        <th className="p-4 text-left">
                                             <input type="checkbox" />
-                                        </td>
-                                        <td className="px-4 py-8">{row.name}</td>
-                                        <td className="px-4 py-8">{row.representative}</td>
-                                        <td className="px-4 py-8">{row.location}</td>
-                                        <td className="px-4 py-8">{row.phone}</td>
-                                        <td className="px-4 py-8 flex items-center gap-1">
-                                            <span>{row.ratings}</span>
-                                            <span className="text-yellow-500">★</span>
-                                        </td>
-                                        <td className="px-4 py-8">
-                                            <span
-                                                className={`${row.status === "open" ? "text-green-600" : "text-red-600"
-                                                    } capitalize`}
-                                            >
-                                                {row.status}
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-8 relative">
-                                            <button onClick={(e) => handleDropdownClick(e, row.id)}>
-                                                <MdMoreVert size={20} />
-                                            </button>
-                                        </td>
+                                        </th>
+                                        <th className="p-4 text-left flex items-center gap-1">
+                                            Product Name
+                                            <MdKeyboardArrowDown size={16} />
+                                        </th>
+                                        <th className="p-4 text-left">Supplier</th>
+                                        <th className="p-4 text-left">Quantity</th>
+                                        <th className="p-4 text-left">Price</th>
+                                        <th className="p-4 text-left">Location</th>
+                                        <th className="p-4 text-left">Created At</th>
+                                        <th className="p-4 text-left">Action</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                                </thead>
+                                <tbody>
+                                    {paginatedAudits.map((audit) => (
+                                        <tr key={audit._id} className="border-t border-t-gray-200 hover:bg-gray-50">
+                                            <td className="px-4 py-6">
+                                                <input type="checkbox" />
+                                            </td>
+                                            <td className="px-4 py-6 font-medium">{audit._product.name}</td>
+                                            <td className="px-4 py-6">{`${audit._user.firstname} ${audit._user.lastname}`}</td>
+                                            <td className="px-4 py-6">{audit.quantity} {audit._product.unit}s</td>
+                                            <td className="px-4 py-6">{formatPrice(audit._product.price)}</td>
+                                            <td className="px-4 py-6">{audit.location}</td>
+                                            <td className="px-4 py-6">{formatDate(audit.createdAt)}</td>
+                                            <td className="px-4 py-6 relative">
+                                                <button onClick={(e) => handleDropdownClick(e, audit._id)}>
+                                                    <MdMoreVert size={20} />
+                                                </button>
+                                                {dropdownRow === audit._id && (
+                                                    <ActionDropdown
+                                                        position={dropdownPosition}
+                                                        onClose={() => setDropdownRow(null)}
+                                                        onEdit={() => handleEditClick(audit)}
+                                                        onDelete={() => handleDeleteClick(audit)}
+                                                    />
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
 
                     {/* Filter Modal */}
                     {showFilterModal && (
@@ -211,63 +301,68 @@ export default function Report() {
                         />
                     )}
 
-                    {/* Dropdown rendered via portal */}
-                    {dropdownRow !== null && (
-                        <ActionDropdown
-                            position={dropdownPosition}
-                            onClose={() => setDropdownRow(null)}
+                    {/* Delete Confirmation Modal */}
+                    {showDeleteModal && deleteAudit && (
+                        <DeleteConfirmModal
+                            isOpen={showDeleteModal}
+                            onClose={() => {
+                                setShowDeleteModal(false);
+                                setDeleteAudit(null);
+                            }}
+                            onConfirm={confirmDelete}
+                            title={deleteAudit._product.name}
                         />
                     )}
 
                     {/* Pagination */}
-                    <div className="flex justify-between items-center mt-6">
-                        <div className="text-sm text-gray-600">
-                            Page {currentPage} of {totalPages}
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={handlePrevious}
-                                disabled={currentPage === 1}
-                                className={`flex items-center px-3 py-2 border rounded-md ${currentPage === 1
-                                    ? "text-gray-400 border-gray-300 cursor-not-allowed"
-                                    : "text-gray-700 border-gray-400 hover:bg-gray-100"
-                                    }`}
-                            >
-                                <MdChevronLeft /> Previous
-                            </button>
+                    {!loading && !error && audits.length > 0 && (
+                        <div className="flex justify-between items-center mt-6">
+                            <div className="text-sm text-gray-600">
+                                Page {currentPage} of {totalPages}
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={handlePrevious}
+                                    disabled={currentPage === 1}
+                                    className={`flex items-center px-3 py-2 border rounded-md ${currentPage === 1
+                                        ? "text-gray-400 border-gray-300 cursor-not-allowed"
+                                        : "text-gray-700 border-gray-400 hover:bg-gray-100"
+                                        }`}
+                                >
+                                    <MdChevronLeft /> Previous
+                                </button>
 
-                            {[...Array(totalPages)].map((_, idx) => {
-                                const page = idx + 1;
-                                return (
-                                    <button
-                                        key={page}
-                                        onClick={() => setCurrentPage(page)}
-                                        className={`w-8 h-8 rounded-md text-sm ${currentPage === page
-                                            ? "bg-blue-500 text-white"
-                                            : "hover:bg-gray-100 text-gray-700"
-                                            }`}
-                                    >
-                                        {page}
-                                    </button>
-                                );
-                            })}
+                                {[...Array(totalPages)].map((_, idx) => {
+                                    const page = idx + 1;
+                                    return (
+                                        <button
+                                            key={page}
+                                            onClick={() => setCurrentPage(page)}
+                                            className={`w-8 h-8 rounded-md text-sm ${currentPage === page
+                                                ? "bg-blue-500 text-white"
+                                                : "hover:bg-gray-100 text-gray-700"
+                                                }`}
+                                        >
+                                            {page}
+                                        </button>
+                                    );
+                                })}
 
-                            <button
-                                onClick={handleNext}
-                                disabled={currentPage === totalPages}
-                                className={`flex items-center px-3 py-2 border rounded-md ${currentPage === totalPages
-                                    ? "text-gray-400 border-gray-300 cursor-not-allowed"
-                                    : "text-gray-700 border-gray-400 hover:bg-gray-100"
-                                    }`}
-                            >
-                                Next <MdChevronRight />
-                            </button>
+                                <button
+                                    onClick={handleNext}
+                                    disabled={currentPage === totalPages}
+                                    className={`flex items-center px-3 py-2 border rounded-md ${currentPage === totalPages
+                                        ? "text-gray-400 border-gray-300 cursor-not-allowed"
+                                        : "text-gray-700 border-gray-400 hover:bg-gray-100"
+                                        }`}
+                                >
+                                    Next <MdChevronRight />
+                                </button>
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </>
             )}
-
         </div>
-
     );
 }
