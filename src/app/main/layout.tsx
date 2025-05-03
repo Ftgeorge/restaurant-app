@@ -1,22 +1,15 @@
 "use client";
 
-import { ReactNode } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { getProfile } from "@/lib/api";
+import { useRouter, usePathname } from "next/navigation";
+import { MdPersonOutline } from "react-icons/md";
 import { IoMdNotificationsOutline } from "react-icons/io";
-import {
-    MdAssignment,
-    MdReport,
-    MdFolder,
-    MdWarning,
-    MdChatBubbleOutline,
-    MdPersonOutline,
-} from "react-icons/md";
-import { FaHamburger } from "react-icons/fa";
+import { MdAssignment, MdReport, MdFolder, MdWarning, MdChatBubbleOutline } from "react-icons/md";
 import { GiHamburgerMenu } from "react-icons/gi";
-
-interface SidebarProviderProps {
-    children: ReactNode;
-}
+import Image from "next/image";
+import { useAuthStore } from "@/store/authStore";
+import ProfileModal from "@/components/modal/ProfileModal";
 
 const navItems = [
     { label: "Incident", icon: <MdWarning size={20} />, path: "/main/incident" },
@@ -25,11 +18,36 @@ const navItems = [
     { label: "Report", icon: <MdReport size={20} />, path: "/main/report" },
 ];
 
-export default function SidebarProvider({
-    children,
-}: SidebarProviderProps) {
+export default function SidebarProvider({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const pathname = usePathname();
+    const { user, setUser } = useAuthStore();
+    const [showProfileModal, setShowProfileModal] = useState(false);
+
+    useEffect(() => {
+        const token = user?.token || localStorage.getItem("token");
+        console.log("Token:", token); // Check if the token is present
+        if (!token) return;
+    
+        (async () => {
+            try {
+                console.log("Fetching profile...");
+                const res = await getProfile(token);
+                console.log("Profile Response:", res); // Log the profile response
+                if (res.success) {
+                    setUser({
+                        ...res.data,
+                        token,
+                    });
+                } else {
+                    console.error("Profile fetch unsuccessful:", res);
+                }
+            } catch (error) {
+                console.error("Failed to fetch profile:", error);
+            }
+        })();
+    }, []);
+    
 
     return (
         <div className="flex w-full h-screen bg-gray-100">
@@ -63,15 +81,33 @@ export default function SidebarProvider({
                     <div className="flex items-center gap-2">
                         <div className="bg-blue-500 h-8 w-3 rounded" />
                         <h1 className="text-lg font-semibold capitalize">
-                            {
-                                navItems.find((item) => item.path === pathname)?.label || ""
-                            }
+                            {navItems.find((item) => item.path === pathname)?.label || ""}
                         </h1>
                     </div>
                     <div className="flex items-center gap-8">
                         <MdChatBubbleOutline size={22} className="cursor-pointer" />
                         <IoMdNotificationsOutline size={22} className="cursor-pointer" />
-                        <MdPersonOutline size={24} className="cursor-pointer" />
+
+                        <div onClick={() => {
+                            setShowProfileModal(true);
+                            console.log('Profile Modal Opened:', showProfileModal); // Add this log
+                        }}>
+                            {user?.image ? (
+                                <Image
+                                    src={user.image}
+                                    alt="profile"
+                                    width={32}
+                                    height={32}
+                                    className="rounded-full object-cover cursor-pointer"
+                                />
+                            ) : (
+                                <MdPersonOutline size={24} className="cursor-pointer" />
+                            )}
+                        </div>
+
+
+                        <ProfileModal open={showProfileModal} onClose={() => setShowProfileModal(false)} />
+
                     </div>
                 </div>
 

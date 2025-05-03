@@ -23,9 +23,13 @@ export default function FilterModal({ position, onClose }: FilterModalProps) {
     return (
         <div
             ref={modalRef}
-            className="absolute z-50 bg-white shadow-lg border rounded-md p-4 w-64"
+            className="absolute z-50 bg-white shadow-lg rounded-md p-6 w-72"
             style={{ top: position.top, left: position.left }}
         >
+            <div className="flex gap-2 items-center">
+                <div className="bg-blue-500 h-8 w-3 rounded" />
+                <h1 className="font-semibold text-xl text-black">Filter</h1>
+            </div>
             <div className="mb-4">
                 <label className="block text-sm font-medium mb-1">Location</label>
                 <select className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
