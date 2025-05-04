@@ -11,34 +11,14 @@ import FilterModal from "@/components/FilterModal";
 import AddIncident from "@/components/AddIncident";
 import { useAuthStore } from "@/store/authStore";
 import { getAudits } from "@/lib/api";
-
-interface Product {
-    _id: string;
-    name: string;
-    description: string;
-    category: string;
-    price: number;
-    unit: string;
-    createdAt: string;
-}
-
-interface User {
-    _id: string;
-    firstname: string;
-    lastname: string;
-    email: string;
-    userType: string;
-}
+import AddAudit from "@/components/AddAudit";
 
 interface Audit {
     _id: string;
-    _user: User;
-    _product: Product;
     quantity: string;
     location: string;
-    createdAt: string;
-    lastUpdated: string;
 }
+
 
 export default function Audit() {
     const [audits, setAudits] = useState<Audit[]>([]);
@@ -71,8 +51,15 @@ export default function Audit() {
         }
 
         try {
-            const auditData = await getAudits(user.token);
-            setAudits(auditData);
+            const rawAuditData = await getAudits(user.token);
+
+            const simplifiedData = rawAuditData.map((item: any) => ({
+                _id: item._id,
+                quantity: item.quantity,
+                location: item.location
+            }));
+
+            setAudits(simplifiedData);
             setLoading(false);
         } catch (error) {
             console.error("Failed to fetch audits:", error);
@@ -81,6 +68,7 @@ export default function Audit() {
             setLoading(false);
         }
     };
+
 
     // Handle UI interactions
     const handleDropdownClick = (event: React.MouseEvent<HTMLButtonElement>, auditId: string) => {
@@ -105,12 +93,10 @@ export default function Audit() {
     };
 
     // Filter audits based on search term
-    const filteredAudits = audits.filter(audit =>
-        audit._product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        audit._product.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        audit.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        `${audit._user.firstname} ${audit._user.lastname}`.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredAudits = audits.filter(audit => {
+        // Add null check to prevent errors when location is undefined
+        return audit.location && audit.location.toLowerCase().includes(searchTerm.toLowerCase());
+    });
 
     // Calculate total pages
     const totalPages = Math.ceil(filteredAudits.length / rowsPerPage);
@@ -121,29 +107,10 @@ export default function Audit() {
         currentPage * rowsPerPage
     );
 
-    // Format date helper
-    const formatDate = (dateString: string) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
-        });
-    };
-
-    // Format price helper
-    const formatPrice = (price: number) => {
-        return new Intl.NumberFormat('en-NG', {
-            style: 'currency',
-            currency: 'NGN',
-            minimumFractionDigits: 2
-        }).format(price);
-    };
-
     return (
         <div className="w-full h-full flex flex-col p-4">
             {showAddForm ? (
-                <AddIncident onClose={() => setShowAddForm(false)} />
+                <AddAudit onClose={() => setShowAddForm(false)} />
             ) : (
                 <>
                     <div className="flex flex-row w-full items-center justify-between mb-4">
@@ -208,15 +175,10 @@ export default function Audit() {
                                         <th className="p-4 text-left">
                                             <input type="checkbox" />
                                         </th>
-                                        <th className="p-4 text-left flex items-center gap-1">
-                                            Product Name
-                                            <MdKeyboardArrowDown size={16} />
-                                        </th>
-                                        <th className="p-4 text-left">Supplier</th>
                                         <th className="p-4 text-left">Quantity</th>
-                                        <th className="p-4 text-left">Price</th>
+
                                         <th className="p-4 text-left">Location</th>
-                                        <th className="p-4 text-left">Created At</th>
+
                                         <th className="p-4 text-left">Action</th>
                                     </tr>
                                 </thead>
@@ -226,12 +188,9 @@ export default function Audit() {
                                             <td className="px-4 py-6">
                                                 <input type="checkbox" />
                                             </td>
-                                            <td className="px-4 py-6 font-medium">{audit._product.name}</td>
-                                            <td className="px-4 py-6">{`${audit._user.firstname} ${audit._user.lastname}`}</td>
-                                            <td className="px-4 py-6">{audit.quantity} {audit._product.unit}s</td>
-                                            <td className="px-4 py-6">{formatPrice(audit._product.price)}</td>
-                                            <td className="px-4 py-6">{audit.location}</td>
-                                            <td className="px-4 py-6">{formatDate(audit.createdAt)}</td>
+                                            <td className="px-4 py-6 font-medium">{audit.quantity}</td>
+                                            <td className="px-4 py-6">{audit.location || "N/A"}</td>
+
                                             <td className="px-4 py-6 relative">
                                                 <button onClick={(e) => handleDropdownClick(e, audit._id)}>
                                                     <MdMoreVert size={20} />
@@ -240,8 +199,8 @@ export default function Audit() {
                                                     <ActionDropdown
                                                         position={dropdownPosition}
                                                         onClose={() => setDropdownRow(null)}
-                                                        onEdit={()=> }
-                                                        onDelete={()=>}
+                                                    // onEdit={}
+                                                    // onDelete={}
                                                     />
                                                 )}
                                             </td>

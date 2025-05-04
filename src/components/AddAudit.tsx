@@ -22,7 +22,7 @@ export default function AddAudit({ onClose }: { onClose: () => void }) {
         }
 
         const payload = {
-            _product: productId,
+            productId,
             quantity,
             location
         };
@@ -30,12 +30,17 @@ export default function AddAudit({ onClose }: { onClose: () => void }) {
         setIsSubmitting(true);
 
         try {
-            await axios.post(`${BASE_URL}/api/v1/audit/create-audit`,payload, {
+            const response = await axios.post(`${BASE_URL}/api/v1/audit/create-audit`, payload, {
                 headers: {
                     'Authorization': `Bearer ${user.token}`,
                     'Content-Type': 'application/json',
                 },
             });
+        
+            if (response.status === 200) {
+                console.log("Audit submitted successfully:", response.data);
+            }
+        
             alert("Audit submitted successfully.");
             onClose();
         } catch (err: any) {
@@ -44,6 +49,7 @@ export default function AddAudit({ onClose }: { onClose: () => void }) {
         } finally {
             setIsSubmitting(false);
         }
+        
     };
 
     return (

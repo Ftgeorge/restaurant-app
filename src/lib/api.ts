@@ -117,7 +117,7 @@ export const updateIncident = async (id: string, data: any, token: string) => {
 
 export const updateAudit = async (id: string, data: any, token: string) => {
     const response = await axios.patch(
-        `${BASE_URL}/api/v1/audit/update-audit/${id}`,
+        `${BASE_URL}/api/v1/inventory/update-inventory/${id}`,
         data,
         {
             headers: {
@@ -156,7 +156,7 @@ export const deleteAudit = async (id: string, data: any, token: string) => {
 
 
 export const getAudits = async (token: string) => {
-    const response = await axios.get(`${BASE_URL}/api/v1/audit/all-audits`, {
+    const response = await axios.get(`${BASE_URL}/api/v1/audit/get-audits`, {
         headers: {
             Authorization: `Bearer ${token}`,
         },
@@ -164,8 +164,45 @@ export const getAudits = async (token: string) => {
     return response.data.data;
 };
 
-export const getReports = async () => {
-    const response = await axios.get(`${BASE_URL}/api/v1/order/all-orders`);
+export const getReports = async (token: string) => {
+    const response = await axios.get(`${BASE_URL}/api/v1/report/get-reports`, {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
     return response.data.data;
 };
 
+export const createReport = async (reportData: any) => {
+    const response = await axios.post(
+        `${BASE_URL}/api/v1/report/create-reports`,
+        reportData,
+    );
+    return response.data;
+};
+
+export const updateReport = async (id: string, data: any, token: string) => {
+    const response = await axios.patch(
+        `${BASE_URL}/api/v1/report/update-reports/${id}`,
+        data,
+        {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
+    return response.data;
+};
+
+export const deleteReport = async (id: string, data: any, token: string) => {
+    const response = await axios.patch(
+        `${BASE_URL}/api/v1/report/delete-reports/${id}`,
+        data,
+        {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
+    return response.data;
+};
