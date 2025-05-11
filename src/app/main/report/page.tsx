@@ -31,6 +31,22 @@ interface Product {
 }
 
 // This interface must match exactly what the ReportEditForm component expects
+interface Incident {
+    _id: string;
+    title: string;
+    description: string;
+    location: {
+        latitude: number;
+        longitude: number;
+    };
+    targetModel: string;
+    targetId: string;
+    tag: string[];
+    status: string;
+    createdAt: string;
+    __v: number;
+}
+
 interface Report {
     _id: string;
     _orderedBy: OrderedBy;
@@ -38,8 +54,7 @@ interface Report {
     status: string;
     note: string;
     createdAt: string;
-    // Additional properties from our API response
-    _incident?: string;
+    _incident?: Incident; // updated from string to Incident
     content?: string;
     signed?: string;
     signature?: string;
@@ -76,25 +91,26 @@ export default function Report() {
             const reportsData = await getReports("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4MTcxYjA2Y2NlMmJjZjQ4MzNiYmI0NCIsImlhdCI6MTc0NjM0NTIzMywiZXhwIjoxNzQ4OTM3MjMzfQ.z4jeUtLNItuT32FFkoMYwQlCNdvNmH8dbhtgnBWdpso");
 
             // Transform API response to match required Report interface
-            const formattedReports: Report[] = reportsData.map((report: any) => ({
-                _id: report._id,
-                _orderedBy: report._orderedBy || {
-                    _id: '',
-                    firstname: '',
-                    lastname: '',
-                    email: '',
-                    userType: ''
-                },
-                products: report.products || [],
-                status: report.status || 'pending',
-                note: report.note || report.content || '', // Use content as note if note is missing
-                createdAt: report.createdAt,
-                // Additional properties
-                _incident: report._incident || '',
-                content: report.content || report.note || '', // Use note as content if content is missing
-                signed: report.signed || '',
-                signature: report.signature || ''
-            }));
+                const formattedReports: Report[] = reportsData.map((report: any) => ({
+                    _id: report._id,
+                    _orderedBy: report._orderedBy || {
+                        _id: '',
+                        firstname: '',
+                        lastname: '',
+                        email: '',
+                        userType: ''
+                    },
+                    products: report.products || [],
+                    status: report.status || 'pending',
+                    note: report.note || report.content || '',
+                    createdAt: report.createdAt,
+                    _incident: typeof report._incident === 'object' && report._incident !== null
+                        ? report._incident.title // Extract just the title
+                        : report._incident || '',
+                    content: report.content || report.note || '',
+                    signed: report.signed || '',
+                    signature: report.signature || ''
+                }));
 
             setReports(formattedReports);
             setLoading(false);
@@ -161,9 +177,8 @@ export default function Report() {
     const filteredReports = reports.filter(report => {
         // Using optional chaining and nullish coalescing for safe property access
         const contentMatch = (report.content ?? '').toLowerCase().includes(searchTerm.toLowerCase());
-        const incidentMatch = typeof report._incident === "string"
-            ? report._incident.toLowerCase().includes(searchTerm.toLowerCase())
-            : false;
+        const incidentMatch = report._incident?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false;
+
 
         const signedMatch = (report.signed ?? '').toLowerCase().includes(searchTerm.toLowerCase());
         const signatureMatch = (report.signature ?? '').toLowerCase().includes(searchTerm.toLowerCase());
@@ -285,12 +300,11 @@ export default function Report() {
                                                 <input type="checkbox" />
                                             </td>
                                             <td className="px-4 py-6">
-                                                {report._incident ?? 'N/A'}
+                                                {typeof report._incident === "object" ? report._incident.title : report._incident ?? 'N/A'}
                                             </td>
                                             <td className="px-4 py-6">
-  {report._incident ?? 'N/A'}
-</td>
-
+                                                {report.content ?? 'N/A'}
+                                            </td>
                                             <td className="px-4 py-6">
                                                 {report.signed ?? 'N/A'}
                                             </td>
