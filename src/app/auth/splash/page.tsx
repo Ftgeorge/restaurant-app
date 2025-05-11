@@ -17,7 +17,7 @@ export default function SplashScreen() {
     return (
         <div className="flex items-center justify-center w-full h-screen bg-white">
             <h1 className="text-4xl font-extrabold text-gray-800 animate-pulse">
-                Restaurant App
+                Cloud Incident Reporter
             </h1>
         </div>
     );
